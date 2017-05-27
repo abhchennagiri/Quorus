@@ -4,8 +4,8 @@ import linecache
 
 #Define Global variables here
 datafile = "./datasets/quora_duplicate_questions.tsv"
-trainingFile = '/datasets/training.full.tsv'
-testFile = '/datasets/test.full.tsv'
+trainingFile = './datasets/training.full.tsv'
+testFile = './datasets/test.full.tsv'
 TEST_SIZE  = 0.1
 
 
@@ -27,7 +27,7 @@ def preprocess( datafile, MIN_LENGTH = 10, LIMIT = 59, header=True ):
             if header == True:
                 header = False
                 continue
-            print line
+            #print line
             fields = line.strip('\n').split('\t')
             
             q1 = clean_str( fields[3] )
@@ -69,11 +69,11 @@ def preprocess( datafile, MIN_LENGTH = 10, LIMIT = 59, header=True ):
 
             lines.append( (q1, q2, dup ) )
 
-            print fields
+            #print fields
             sentences += 1
             
                 
-    print "%s (%d)" % (longest_q, max_len)
+    print "Longest question: %s (%d)" % (longest_q, max_len)
     print "duplicates: %d (%.2f)" % (dups, ((1.0 * dups) / sentences))
     print "skipped: %d (%d)" % (skipped, skipped_dup)
             
@@ -84,7 +84,7 @@ def createTrainingData( trainingFile, lines ):
     index = -1 * int( len(lines) * TEST_SIZE )
     trainingLines = lines[:index]
     print "training: ", len(trainingLines)
-    with open( trainingFile, 'w' ) as f:
+    with open( trainingFile, 'w+' ) as f:
         for line in trainingLines:
             q1, q2, dup = line
             f.write('%s\t%s\t%s\n' %(dup, q1, q2))
@@ -94,13 +94,17 @@ def createTestData( testFile, lines ):
     index = -1 * int( len(lines) * TEST_SIZE )
     testLines = lines[index:]
     print "test: ", len(testLines)
-    with open( testFile, 'w' ) as f:
+    with open( testFile, 'w+' ) as f:
         for line in testLines:
             q1, q2, dup = line
             f.write( '%s\t%s\t%s\n' %(dup, q1, q2) )
 
 
-lines = preprocess( datafile )
-createTrainingData( trainingFile, lines )
-createTestData( testData, lines )
+def main():
+    lines = preprocess( datafile )
+    createTrainingData( trainingFile, lines )
+    createTestData( testFile, lines )
+
+if __name__ == '__main__':
+    main()
 
