@@ -82,4 +82,3 @@ for t in np.arange(0.05, 0.35, 0.01):
     print "t: %.2f \taccuracy: %.4f \tprec: %.4f\t recall: %.4f\t f1: %.4f\t pos_rate: %.4f\t best_t: %.2f\t best_acc: %.4f" %(t, accuracy, precision, recall, f1, positive_rate, best_t, best_accuracy)        
 
 
-
