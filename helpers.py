@@ -68,5 +68,42 @@ def load_data_and_labels( training_data_file ):
     return [q1, q2, labels, q1_len, q2_len]
 
 
+def normalize( word ):
+    """
+    Normalize the words that have numbers or casing
+    """
+    return word.lower()
+
+
+def load_word_vector_mapping( embeddings_file ):
+    """
+    Load the embedding vector for each word onto the ordered dictionary and return
+    """
+    ret = OrderedDict()
+    for row in list(open(embeddings_file,"r").readlines()):
+        fields = row.strip().split()
+        word = fields[0]
+        ret[word] = np.array(list(map(float, fields[1:])))
+
+    return ret
+
+
+def load_embeddings(embeddings_file, vocab_dict, embedding_dim, use_cache=True):
+    embeddings_cache_file = embeddings_file + ".cache.npy"
+    if use_cache and os.path.isfile(embeddings_cache_file):
+        embeddings = np.load(embeddings_cache_file)
+        return embeddings
+
+    embeddings = np.array(np.random.randn(len(vocab_dict)+ 1, embedding_dim), dtype=np.float32)
+    embeddings[0] = 0
+    for word, vec in load_word_vector_mapping(embeddings_file).items():
+        word = normalize(word)
+        if word in vocab_dict:
+            embeddings[vocab_dict[word]] = vec
+   
+    np.save(embeddings_cache_file, embeddings)
+    print "Initialized embeddings"
+    return embeddings
+
 
 load_data_and_labels( "./datasets/test.full.tsv" )    
