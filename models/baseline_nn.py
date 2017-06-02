@@ -37,13 +37,13 @@ class BaselineNN( object ):
             self.predictions = tf.argmax(self.scores, 1, name="predictions")
                 
 
-       #Calculate mean cross entropy loss
-       with tf.name_scope("loss"):
+        #Calculate mean cross entropy loss
+        with tf.name_scope("loss"):
            losses = tf.nn.softmax_cross_entropy_with_logits(self.scores, self.input_y)
            self.loss = tf.reduce_mean(losses)
 
-      #Accuracy
-      with tf.name_scope("accuracy"):
+        #Accuracy
+        with tf.name_scope("accuracy"):
           self.y_truth = tf.argmax(self.input_y, 1, name="y_truth")
           correct_predictions = tf.equal( self.predictions, tf.argmax(self.input_y, 1))
           self.accuracy = tf.reduce_mean(tf.cast(correct_predictions,"float"), name="accuracy")
