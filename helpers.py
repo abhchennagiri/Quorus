@@ -103,7 +103,26 @@ def load_embeddings(embeddings_file, vocab_dict, embedding_dim, use_cache=True):
    
     np.save(embeddings_cache_file, embeddings)
     print "Initialized embeddings"
+    #print embeddings
     return embeddings
 
+def batch_iter(data, batch_size, shuffle=True):
+    """
+    Generates batch iterator for a dataset
+    """
+    data = np.array(data)
+    data_size = len(data)
+    num_batches_per_epoch = int((len(data) - 1)/batch_size) + 1
 
-load_data_and_labels( "./datasets/test.full.tsv" )    
+    #Shuffle the data at each epoch
+    if shuffle:
+        shuffled_indices = np.random.permutation(np.arange(data_size))
+        shuffled_data = data[shuffled_indices]
+
+    else:
+        shuffled_data = data
+
+    for batch_num in range(num_batches_per_epoch):
+        start_index = batch_num * batch_size
+        end_index = min((batch_num + 1)* batch_size, data_size)
+        yield shuffled_data[start_index:end_index]
