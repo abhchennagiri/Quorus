@@ -14,12 +14,15 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score
 
 from models.baseline_nn import BaselineNN
+from models.qq_lstm import LSTMQQ
+from models.qq_lstm_simple import LSTMSingle
+from models.qq_lstm_deep3 import LSTMDeep3
 
 # Parameters
 # ==================================================
 
 # Data loading params
-tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
+tf.flags.DEFINE_float("dev_sample_percentage", .05, "Percentage of the training data to use for validation")
 tf.flags.DEFINE_string("training_data_file", "./datasets/training.full.tsv", "Data source for the training data.")
 tf.flags.DEFINE_string("embeddings_file", "./glove.6B.100d.txt", "Data source for the pretrained word embeddings")
 
@@ -32,7 +35,7 @@ tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularization lambda (default: 
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 3, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
@@ -122,7 +125,7 @@ x1_lengths_train, x1_lengths_dev = q1_lengths_shuffled[:dev_sample_index], q1_le
 x2_lengths_train, x2_lengths_dev = q2_lengths_shuffled[:dev_sample_index], q2_lengths_shuffled[dev_sample_index:]
 print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-
+print x1_train.shape
 
 # Training
 # ==================================================
@@ -133,26 +136,25 @@ with tf.Graph().as_default():
       log_device_placement=FLAGS.log_device_placement)
     sess = tf.Session(config=session_conf)
     with sess.as_default():
-        cnn = BaselineNN(
-            sequence_length=x1_train.shape[1],
-            num_classes=y_train.shape[1],
-            pretrained_embeddings=pretrained_embeddings)
+        #cnn = BaselineNN(
+        #    sequence_length=x1_train.shape[1],
+        #    num_classes=y_train.shape[1],
+        #    pretrained_embeddings=pretrained_embeddings)
 
-        # cnn = SiameseLSTM(
-        #     sequence_length=x1_train.shape[1],
-        #     num_classes=y_train.shape[1],
-        #     pretrained_embeddings=pretrained_embeddings,
-        #     filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
-        #     num_filters=FLAGS.num_filters,
-        #     l2_reg_lambda=FLAGS.l2_reg_lambda)
+        cnn = LSTMDeep3(
+             sequence_length=x1_train.shape[1],
+             num_classes=y_train.shape[1],
+             pretrained_embeddings=pretrained_embeddings,
+             filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
+             num_filters=FLAGS.num_filters,
+             l2_reg_lambda=FLAGS.l2_reg_lambda)
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         optimizer = tf.train.AdamOptimizer(1e-3)
         grads_and_vars = optimizer.compute_gradients(cnn.loss)
         train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
-
-        # Keep track of gradient values and sparsity (optional)
+        
         grad_summaries = []
         for g, v in grads_and_vars:
             if g is not None:
@@ -190,18 +192,17 @@ with tf.Graph().as_default():
 
         # Write vocabulary
         vocab_processor.save(os.path.join(out_dir, "vocab"))
-
+        
         # Initialize all variables
         sess.run(tf.global_variables_initializer())
-
         def train_step(x1_batch, x2_batch, y_batch, x1_lengths_batch, x2_lengths_batch, epoch):
             feed_dict = {
               cnn.input_x1: x1_batch,
               cnn.input_x2: x2_batch,
               cnn.input_y: y_batch,
               cnn.dropout_keep_prob: FLAGS.dropout_keep_prob,
-              cnn.input_x1_len: x1_lengths_batch,
-              cnn.input_x2_len: x2_lengths_batch,
+              cnn.input_x1_length: x1_lengths_batch,
+              cnn.input_x2_length: x2_lengths_batch,
             }
             _, step, summaries, loss, accuracy, scores, predictions, y_truth = sess.run(
                 [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy, cnn.scores, cnn.predictions, cnn.y_truth],
@@ -225,8 +226,8 @@ with tf.Graph().as_default():
               cnn.input_x2: x2_batch,
               cnn.input_y: y_batch,
               cnn.dropout_keep_prob: 1.0,
-              cnn.input_x1_len: x1_lengths_batch,
-              cnn.input_x2_len: x2_lengths_batch,
+              cnn.input_x1_length: x1_lengths_batch,
+              cnn.input_x2_length: x2_lengths_batch,
             }
             step, summaries, loss, accuracy, scores, predictions, y_truth = sess.run(
                 [global_step, dev_summary_op, cnn.loss, cnn.accuracy, cnn.scores, cnn.predictions, cnn.y_truth],
@@ -266,4 +267,4 @@ with tf.Graph().as_default():
                     path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                     print("Saved model checkpoint to {}\n".format(path))
 
-
+        
