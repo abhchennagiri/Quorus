@@ -16,10 +16,10 @@ set="full"
 
 word_vectors="./glove.6B.${d}d.txt"
 #word_vectors="./glove.twitter.27B/glove.twitter.27B.${d}d.txt"
-#word_vectors="./Quora_question_pair_partition/wordvec.txt"
+
 
 training_data="./datasets/training.${set}.tsv"
-#training_data="./Quora_question_pair_partition/train.${set}.tsv"
+
 
 python train.py \
     --training_data_file="${training_data}" \
