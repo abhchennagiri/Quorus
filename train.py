@@ -17,6 +17,7 @@ from models.baseline_nn import BaselineNN
 from models.qq_lstm import LSTMQQ
 from models.qq_lstm_simple import LSTMSingle
 from models.qq_lstm_deep3 import LSTMDeep3
+from models.qq_lstm_cnn import LSTM_CNN
 
 # Parameters
 # ==================================================
@@ -35,7 +36,7 @@ tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularization lambda (default: 
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 3, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
@@ -140,15 +141,23 @@ with tf.Graph().as_default():
         #    sequence_length=x1_train.shape[1],
         #    num_classes=y_train.shape[1],
         #    pretrained_embeddings=pretrained_embeddings)
-
-        cnn = LSTMDeep3(
+        
+        cnn = LSTM_CNN(
              sequence_length=x1_train.shape[1],
              num_classes=y_train.shape[1],
              pretrained_embeddings=pretrained_embeddings,
              filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
              num_filters=FLAGS.num_filters,
              l2_reg_lambda=FLAGS.l2_reg_lambda)
-
+        """
+        cnn = LSTMSingle(
+             sequence_length=x1_train.shape[1],
+             num_classes=y_train.shape[1],
+             pretrained_embeddings=pretrained_embeddings,
+             #filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
+             #num_filters=FLAGS.num_filters,
+             l2_reg_lambda=FLAGS.l2_reg_lambda)
+        """
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         optimizer = tf.train.AdamOptimizer(1e-3)
